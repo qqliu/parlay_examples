@@ -38,7 +38,6 @@ int parallel_matrix_sum(const vector<vector<int>>& matrix, int num_threads) {
     int extra_rows = rows % num_threads;
 
     vector<future<int>> futures;
-    mutex sum_mutex;
     int total_sum = 0;
 
     for (int i = 0; i < num_threads; ++i) {
@@ -48,12 +47,12 @@ int parallel_matrix_sum(const vector<vector<int>>& matrix, int num_threads) {
             end_row += extra_rows;
         }
 
-        futures.push_back(async(launch::async, calculate_row_sum, ref(matrix), start_row, end_row));
+        futures.push_back(async(launch::async, calculate_row_sum,
+                    ref(matrix), start_row, end_row));
     }
 
     for (auto& future : futures) {
         int partial_sum = future.get();
-        lock_guard<mutex> lock(sum_mutex);
         total_sum += partial_sum;
     }
 
