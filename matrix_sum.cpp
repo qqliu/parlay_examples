@@ -8,11 +8,8 @@
 #include <algorithm>
 #include <parlay/primitives.h>
 
-//#include "scan.h"
-
 using namespace std;
 
-// Function to calculate the sum of a submatrix
 int calculate_sum(const vector<vector<int>>& matrix) {
     int sum = 0;
     for (int i = 0; i < matrix.size(); i++) {
@@ -34,11 +31,9 @@ int calculate_row_sum(const vector<vector<int>>& matrix, int start_row, int end_
     return sum;
 }
 
-// Parallel matrix summation function
 int parallel_matrix_sum(const vector<vector<int>>& matrix, int num_threads) {
     int rows = matrix.size();
 
-    // Divide the matrix into submatrices based on the number of threads
     int rows_per_thread = rows / num_threads;
     int extra_rows = rows % num_threads;
 
@@ -46,7 +41,6 @@ int parallel_matrix_sum(const vector<vector<int>>& matrix, int num_threads) {
     mutex sum_mutex;
     int total_sum = 0;
 
-    // Create threads to calculate sums of submatrices
     for (int i = 0; i < num_threads; ++i) {
         int start_row = i * rows_per_thread;
         int end_row = start_row + rows_per_thread;
@@ -57,7 +51,6 @@ int parallel_matrix_sum(const vector<vector<int>>& matrix, int num_threads) {
         futures.push_back(async(launch::async, calculate_row_sum, ref(matrix), start_row, end_row));
     }
 
-    // Wait for all threads to finish and collect their results
     for (auto& future : futures) {
         int partial_sum = future.get();
         lock_guard<mutex> lock(sum_mutex);
@@ -74,9 +67,6 @@ int parlay_scan_matrix_sum(const vector<vector<int>>& matrix) {
         row_sums[i] = parlay::scan(matrix[i], parlay::plus<int>()).second;
     });
 
-    /*int sum = 0;
-    for (int row = 0; row < row_sums.size(); row++)
-        sum += row_sums[row];*/
     int sum = parlay::scan(row_sums, parlay::plus<int>()).second;
     return sum;
 }
@@ -91,14 +81,13 @@ int main() {
     random_device rd;
     mt19937 gen(rd());
     uniform_int_distribution<> distrib(1, 2);
-    uniform_int_distribution<> initial_distrib(x/3, x);
 
     parlay::parallel_for (0, n, [&](int ii) {
             for (int j = 0; j < x; ++j) {
                     if (j == 0 && ii < 3*n/4)
                         matrix[ii][j] = 20;
                     if (j == 0 && ii >= 3*n/4)
-                        matrix[ii][j] = x; //initial_distrib(gen);
+                        matrix[ii][j] = x;
 
                     if (j < matrix[ii][0] && j != 0)
                         matrix[ii].push_back(distrib(gen));
